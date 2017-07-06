@@ -4,12 +4,8 @@ extern crate r2d2;
 extern crate r2d2_sqlite;
 extern crate rusqlite;
 
-
-use susanoo::context::Context;
-use susanoo::router::RoutesBuilder;
-use susanoo::server::{Server, State};
-use susanoo::response::{Response, AsyncResult};
-use susanoo::contrib::hyper::StatusCode;
+use susanoo::{Context, Server, Response, AsyncResult};
+use susanoo::contrib::hyper::{Get, StatusCode};
 use susanoo::contrib::futures::{future, Future};
 
 use std::ops::Deref;
@@ -87,13 +83,8 @@ fn main() {
     }
     let db = DB(pool);
 
-    let router = RoutesBuilder::default()
-        .get("/", index)
-        .finish();
-
-    let mut state = State::custom();
-    state.insert::<DB>(db);
-
-    let server = Server::new(router, Vec::new(), Some(state));
+    let server = Server::new()
+        .with_route(Get, "/", index)
+        .insert::<DB>(db);
     server.run("0.0.0.0:4000");
 }

@@ -4,17 +4,18 @@ use std::sync::Arc;
 use futures::{future, Future};
 use futures::future::BoxFuture;
 use hyper::Error as HyperError;
-use hyper::StatusCode;
-use hyper::server::{Http, Service, NewService, Request, Response};
-use typemap::TypeMap;
+use hyper::{Method, StatusCode};
+use hyper::server::{Http, Service, NewService, Response};
+use hyper::server::Request;
+use typemap::{TypeMap, Key};
 use unsafe_any::UnsafeAny;
 
 use context::Context;
+use controller::Controller;
 use middleware::Middleware;
 use router::Router;
 
 
-// TODO: use typemap
 pub type State = TypeMap<UnsafeAny + 'static + Send + Sync>;
 
 
@@ -32,15 +33,44 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(router: Router, middlewares: Vec<Arc<Middleware>>, state: Option<State>) -> Self {
-        let state = Arc::new(state.unwrap_or_else(|| State::custom()));
+    pub fn new() -> Self {
         Server {
             inner: Arc::new(ServerInner {
-                router,
-                middlewares,
-                state,
+                router: Router::default(),
+                middlewares: Vec::new(),
+                state: Arc::new(State::custom()),
             }),
         }
+    }
+
+    pub fn with_route<S, H>(mut self, method: Method, pattern: S, handler: H) -> Self
+    where
+        S: AsRef<str>,
+        H: Controller,
+    {
+        Arc::get_mut(&mut self.inner)
+            .unwrap()
+            .router
+            .add_route(method, pattern, handler);
+        self
+    }
+
+
+    pub fn with_middleware<M: Middleware>(mut self, middleware: M) -> Self {
+        Arc::get_mut(&mut self.inner)
+            .unwrap()
+            .middlewares
+            .push(Arc::new(middleware));
+        self
+    }
+
+    pub fn insert<T: Key<Value = T> + Send + Sync>(mut self, value: T) -> Self {
+        {
+            let inner = Arc::get_mut(&mut self.inner).unwrap();
+            let mut state = Arc::get_mut(&mut inner.state).unwrap();
+            state.insert::<T>(value);
+        }
+        self
     }
 
     pub fn run(self, addr: &str) {

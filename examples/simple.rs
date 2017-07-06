@@ -1,10 +1,7 @@
 extern crate susanoo;
 
-use susanoo::context::Context;
-use susanoo::router::RoutesBuilder;
-use susanoo::server::Server;
-use susanoo::response::{Response, Failure, AsyncResult};
-use susanoo::contrib::hyper::StatusCode;
+use susanoo::{Context, Server, Response, Failure, AsyncResult};
+use susanoo::contrib::hyper::{Get, Post, StatusCode};
 use susanoo::contrib::futures::{future, Future, Stream};
 
 
@@ -44,13 +41,10 @@ fn show_captures(ctx: Context) -> AsyncResult {
 }
 
 fn main() {
-    let router = RoutesBuilder::default()
-        .get("/", index)
-        .post("/", index_post)
-        .post("/post", index_post)
-        .get(r"/echo/([^/]+)/(?P<hoge>[^/]+)/([^/]+)", show_captures)
-        .finish();
-
-    let server = Server::new(router, Vec::new(), None);
+    let server = Server::new()
+        .with_route(Get, "/", index)
+        .with_route(Post, "/", index_post)
+        .with_route(Post, "/post", index_post)
+        .with_route(Get, r"/echo/([^/]+)/(?P<hoge>[^/]+)/([^/]+)", show_captures);
     server.run("0.0.0.0:4000");
 }

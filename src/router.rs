@@ -4,9 +4,8 @@ use std::sync::Arc;
 use hyper::{Method, StatusCode};
 use regex::Regex;
 
-use controller::Controller;
 use context::Captures;
-
+use controller::Controller;
 
 struct Route {
     pattern: Regex,
@@ -14,14 +13,13 @@ struct Route {
 }
 
 
-/// Builder for RouteRecognizer.
 #[derive(Default)]
-pub struct RoutesBuilder {
+pub struct Router {
     routes: HashMap<Method, Vec<Route>>,
 }
 
-impl RoutesBuilder {
-    pub fn route<S, H>(mut self, method: Method, pattern: S, handler: H) -> Self
+impl Router {
+    pub fn add_route<S, H>(&mut self, method: Method, pattern: S, handler: H) -> &mut Self
     where
         S: AsRef<str>,
         H: Controller,
@@ -36,73 +34,6 @@ impl RoutesBuilder {
         self
     }
 
-    /// Add handler for 'GET' method
-    pub fn get<S, H>(self, pattern: S, handler: H) -> Self
-    where
-        S: AsRef<str>,
-        H: Controller,
-    {
-        self.route(Method::Get, pattern, handler)
-    }
-
-    /// Add handler for 'POST' method
-    pub fn post<S, H>(self, pattern: S, handler: H) -> Self
-    where
-        S: AsRef<str>,
-        H: Controller,
-    {
-        self.route(Method::Post, pattern, handler)
-    }
-
-    /// Add handler for 'PUT' method
-    pub fn put<S, H>(self, pattern: S, handler: H) -> Self
-    where
-        S: AsRef<str>,
-        H: Controller,
-    {
-        self.route(Method::Put, pattern, handler)
-    }
-
-    /// Add handler for 'DELETE' method
-    pub fn delete<S, H>(self, pattern: S, handler: H) -> Self
-    where
-        S: AsRef<str>,
-        H: Controller,
-    {
-        self.route(Method::Delete, pattern, handler)
-    }
-
-    /// Add handler for 'HEAD' method
-    pub fn head<S, H>(self, pattern: S, handler: H) -> Self
-    where
-        S: AsRef<str>,
-        H: Controller,
-    {
-        self.route(Method::Head, pattern, handler)
-    }
-
-    /// Add handler for 'OPTIONS' method
-    pub fn options<S, H>(self, pattern: S, handler: H) -> Self
-    where
-        S: AsRef<str>,
-        H: Controller,
-    {
-        self.route(Method::Options, pattern, handler)
-    }
-
-    /// Create recoginizer
-    pub fn finish(self) -> Router {
-        Router { routes: self.routes }
-    }
-}
-
-
-
-pub struct Router {
-    routes: HashMap<Method, Vec<Route>>,
-}
-
-impl Router {
     pub fn recognize(
         &self,
         method: &Method,
