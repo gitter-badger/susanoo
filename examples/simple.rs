@@ -3,13 +3,12 @@ extern crate susanoo;
 use susanoo::context::Context;
 use susanoo::router::RoutesBuilder;
 use susanoo::server::Server;
-use susanoo::contrib::hyper::server::Response;
-use susanoo::contrib::hyper::{Error as HyperError, StatusCode};
+use susanoo::response::{Response, Failure, AsyncResult};
+use susanoo::contrib::hyper::StatusCode;
 use susanoo::contrib::futures::{future, Future, Stream};
-use susanoo::contrib::futures::future::BoxFuture;
 
 
-fn index(_ctx: Context) -> BoxFuture<Response, HyperError> {
+fn index(_ctx: Context) -> AsyncResult {
     future::ok(
         Response::new()
             .with_status(StatusCode::Ok)
@@ -17,7 +16,7 @@ fn index(_ctx: Context) -> BoxFuture<Response, HyperError> {
     ).boxed()
 }
 
-fn index_post(ctx: Context) -> BoxFuture<Response, HyperError> {
+fn index_post(ctx: Context) -> AsyncResult {
     ctx.req
         .body()
         .collect()
@@ -32,10 +31,11 @@ fn index_post(ctx: Context) -> BoxFuture<Response, HyperError> {
                     .with_body(format!("Posted: {}", String::from_utf8_lossy(&body))),
             )
         })
+        .map_err(|err| Failure::new(err))
         .boxed()
 }
 
-fn show_captures(ctx: Context) -> BoxFuture<Response, HyperError> {
+fn show_captures(ctx: Context) -> AsyncResult {
     future::ok(
         Response::new()
             .with_status(StatusCode::Ok)
@@ -51,6 +51,6 @@ fn main() {
         .get(r"/echo/([^/]+)/(?P<hoge>[^/]+)/([^/]+)", show_captures)
         .finish();
 
-    let server = Server::new(router, None);
+    let server = Server::new(router, Vec::new(), None);
     server.run("0.0.0.0:4000");
 }

@@ -8,10 +8,9 @@ extern crate rusqlite;
 use susanoo::context::Context;
 use susanoo::router::RoutesBuilder;
 use susanoo::server::{Server, State};
-use susanoo::contrib::hyper::server::Response;
-use susanoo::contrib::hyper::{Error as HyperError, StatusCode};
+use susanoo::response::{Response, AsyncResult};
+use susanoo::contrib::hyper::StatusCode;
 use susanoo::contrib::futures::{future, Future};
-use susanoo::contrib::futures::future::BoxFuture;
 
 use std::ops::Deref;
 use r2d2::Pool;
@@ -40,7 +39,7 @@ struct Person {
 }
 
 
-fn index(ctx: Context) -> BoxFuture<Response, HyperError> {
+fn index(ctx: Context) -> AsyncResult {
     let db = ctx.state.get::<DB>().unwrap();
     let conn = db.get().unwrap();
     let mut stmt = conn.prepare("SELECT id,name,data FROM persons")
@@ -95,6 +94,6 @@ fn main() {
     let mut state = State::custom();
     state.insert::<DB>(db);
 
-    let server = Server::new(router, Some(state));
+    let server = Server::new(router, Vec::new(), Some(state));
     server.run("0.0.0.0:4000");
 }

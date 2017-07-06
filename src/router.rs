@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::sync::Arc;
 use hyper::{Method, StatusCode};
 use regex::Regex;
 
@@ -9,7 +10,7 @@ use context::Captures;
 
 struct Route {
     pattern: Regex,
-    handler: Box<Controller>,
+    handler: Arc<Controller>,
 }
 
 
@@ -27,7 +28,7 @@ impl RoutesBuilder {
     {
         let pattern = normalize_pattern(pattern.as_ref());
         let pattern = Regex::new(&pattern).unwrap();
-        let handler = Box::new(handler);
+        let handler = Arc::new(handler);
         self.routes
             .entry(method)
             .or_insert(Vec::new())
@@ -106,13 +107,13 @@ impl Router {
         &self,
         method: &Method,
         path: &str,
-    ) -> Result<(&Controller, Captures), StatusCode> {
+    ) -> Result<(Arc<Controller>, Captures), StatusCode> {
         let routes = self.routes.get(method).ok_or(
             StatusCode::NotFound,
         )?;
         for route in routes {
             if let Some(caps) = get_owned_captures(&route.pattern, path) {
-                return Ok((&*route.handler, caps));
+                return Ok((route.handler.clone(), caps));
             }
         }
         Err(StatusCode::NotFound)
