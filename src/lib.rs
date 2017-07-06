@@ -21,8 +21,13 @@ pub mod contrib {
     pub use typemap;
 }
 
+#[doc(inline)]
 pub use context::Context;
+#[doc(inline)]
 pub use controller::Controller;
+#[doc(inline)]
 pub use middleware::Middleware;
+#[doc(inline)]
 pub use response::{Response, Failure, AsyncResult};
+#[doc(inline)]
 pub use server::Server;
