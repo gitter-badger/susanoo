@@ -16,7 +16,7 @@ use middleware::Middleware;
 use router::Router;
 
 
-pub type State = TypeMap<UnsafeAny + 'static + Send + Sync>;
+pub type States = TypeMap<UnsafeAny + 'static + Send + Sync>;
 
 
 /// Internal state of server
@@ -24,7 +24,7 @@ pub type State = TypeMap<UnsafeAny + 'static + Send + Sync>;
 pub(crate) struct ServerInner {
     router: Router,
     middlewares: Vec<Arc<Middleware>>,
-    state: Arc<State>,
+    states: Arc<States>,
 }
 
 
@@ -38,7 +38,7 @@ impl Server {
             inner: Arc::new(ServerInner {
                 router: Router::default(),
                 middlewares: Vec::new(),
-                state: Arc::new(State::custom()),
+                states: Arc::new(States::custom()),
             }),
         }
     }
@@ -64,11 +64,11 @@ impl Server {
         self
     }
 
-    pub fn insert<T: Key<Value = T> + Send + Sync>(mut self, value: T) -> Self {
+    pub fn with_state<T: Key<Value = T> + Send + Sync>(mut self, value: T) -> Self {
         {
             let inner = Arc::get_mut(&mut self.inner).unwrap();
-            let mut state = Arc::get_mut(&mut inner.state).unwrap();
-            state.insert::<T>(value);
+            let mut states = Arc::get_mut(&mut inner.states).unwrap();
+            states.insert::<T>(value);
         }
         self
     }
@@ -112,7 +112,7 @@ impl Service for RootService {
             &path,
         ) {
             Ok((controller, cap)) => {
-                let ctx = future::ok(Context::new(req, cap, self.inner.state.clone())).boxed();
+                let ctx = future::ok(Context::new(req, cap, self.inner.states.clone())).boxed();
 
                 // apply middlewares
                 let ctx = self.inner.middlewares.iter().fold(

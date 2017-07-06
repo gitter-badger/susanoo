@@ -2,7 +2,6 @@ extern crate susanoo;
 extern crate typemap;
 extern crate r2d2;
 extern crate r2d2_sqlite;
-extern crate rusqlite;
 
 use susanoo::{Context, Server, Response, AsyncResult};
 use susanoo::contrib::hyper::{Get, StatusCode};
@@ -36,7 +35,7 @@ struct Person {
 
 
 fn index(ctx: Context) -> AsyncResult {
-    let db = ctx.state.get::<DB>().unwrap();
+    let db = ctx.states.get::<DB>().unwrap();
     let conn = db.get().unwrap();
     let mut stmt = conn.prepare("SELECT id,name,data FROM persons")
         .unwrap();
@@ -56,7 +55,7 @@ fn index(ctx: Context) -> AsyncResult {
 }
 
 
-fn main() {
+fn create_db() -> DB {
     let _ = std::fs::remove_file("app.sqlite");
     let manager = SqliteConnectionManager::new("app.sqlite");
     let pool = r2d2::Pool::new(Default::default(), manager).unwrap();
@@ -81,10 +80,17 @@ fn main() {
             &[&me.name, &me.data],
         ).unwrap();
     }
-    let db = DB(pool);
+
+    DB(pool)
+}
+
+
+fn main() {
+    let db = create_db();
 
     let server = Server::new()
         .with_route(Get, "/", index)
-        .insert::<DB>(db);
+        .with_state(db);
+
     server.run("0.0.0.0:4000");
 }
