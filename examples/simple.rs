@@ -51,6 +51,6 @@ fn main() {
         .get(r"/echo/([^/]+)/(?P<hoge>[^/]+)/([^/]+)", show_captures)
         .finish();
 
-    let server = Server::new(router);
+    let server = Server::new(router, None);
     server.run("0.0.0.0:4000");
 }

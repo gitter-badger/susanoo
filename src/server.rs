@@ -28,9 +28,13 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(router: Router) -> Self {
-        let state = Arc::new(State::custom());
-        Server { inner: Arc::new(ServerInner { router, state }) }
+    pub fn new(router: Router, state: Option<State>) -> Self {
+        Server {
+            inner: Arc::new(ServerInner {
+                router,
+                state: Arc::new(state.unwrap_or_else(|| State::custom())),
+            }),
+        }
     }
 
     pub fn run(self, addr: &str) {

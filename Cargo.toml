@@ -10,5 +10,10 @@ tokio-core = "~0.1"
 regex = "~0.2"
 typemap = "*"
 
+[dev-dependencies]
+r2d2 = "*"
+r2d2_sqlite = "*"
+rusqlite = "*"
+
 [features]
 unstable = []
