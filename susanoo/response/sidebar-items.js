@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Success","Success type"]],"struct":[["Failure","Error type"],["Response","An HTTP Response"]],"type":[["AsyncResult","Asynchronous result type"]]});
