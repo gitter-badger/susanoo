@@ -2,13 +2,13 @@ use std::error::Error as StdError;
 use futures::future::BoxFuture;
 use context::Context;
 
-/// response type
+/// Response type
 pub use hyper::server::Response;
 
-/// asynchronous result type
+/// Asynchronous result type
 pub type AsyncResult<T = Success> = BoxFuture<T, Failure>;
 
-/// success type
+/// Success type
 pub enum Success {
     Finished(Response),
     Continue(Context),
@@ -27,7 +27,7 @@ impl From<Context> for Success {
 }
 
 
-/// error type
+/// Error type
 pub struct Failure {
     pub err: Box<StdError + Send + 'static>,
     pub response: Option<Response>,
@@ -41,7 +41,6 @@ impl<E: StdError + 'static + Send> From<E> for Failure {
         }
     }
 }
-
 
 impl Failure {
     pub fn with_response(mut self, response: Response) -> Self {

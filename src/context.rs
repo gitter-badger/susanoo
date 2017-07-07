@@ -4,8 +4,11 @@ use typemap::TypeMap;
 use server::States;
 use unsafe_any::UnsafeAny;
 
+/// Captured value extracted by the router.
 pub type Captures = Vec<(Option<String>, String)>;
 
+/// An object which contains request data, parameters extracted by the router,
+/// global/per-request shared variables.
 pub struct Context {
     pub req: Request,
     pub cap: Captures,

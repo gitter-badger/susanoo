@@ -28,11 +28,13 @@ pub(crate) struct ServerInner {
 }
 
 
+/// Root object of the application.
 pub struct Server {
     inner: Arc<ServerInner>,
 }
 
 impl Server {
+    /// Creates an empty instance of the server.
     pub fn new() -> Self {
         Server {
             inner: Arc::new(ServerInner {
@@ -43,6 +45,7 @@ impl Server {
         }
     }
 
+    /// Add a new route to the server.
     pub fn with_route<S, M>(mut self, method: Method, pattern: S, middleware: M) -> Self
     where
         S: AsRef<str>,
@@ -55,7 +58,7 @@ impl Server {
         self
     }
 
-
+    /// Put a middleware into the server.
     pub fn with_middleware<M: Middleware>(mut self, middleware: M) -> Self {
         Arc::get_mut(&mut self.inner)
             .unwrap()
@@ -64,6 +67,7 @@ impl Server {
         self
     }
 
+    /// Insert a shared state into the server.
     pub fn with_state<T: Key<Value = T> + Send + Sync>(mut self, value: T) -> Self {
         {
             let inner = Arc::get_mut(&mut self.inner).unwrap();
@@ -73,6 +77,7 @@ impl Server {
         self
     }
 
+    /// Run server.
     pub fn run(self, addr: &str) {
         let addr = addr.parse().unwrap();
         let http = Http::new().bind(&addr, self).unwrap();

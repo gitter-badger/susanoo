@@ -17,6 +17,7 @@ where
 }
 
 
+/// The chain of middlewares.
 #[derive(Default)]
 pub struct MiddlewareStack {
     middlewares: Vec<Arc<Middleware>>,

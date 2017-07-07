@@ -1,3 +1,10 @@
+//!
+//! A micro Web framework based on Hyper, Futures and Tokio.
+//!
+//! ## WARNING
+//! This project is not production ready.
+//!
+
 #[doc(hidden)]
 pub extern crate futures;
 #[doc(hidden)]
@@ -23,7 +30,7 @@ pub mod contrib {
 #[doc(inline)]
 pub use context::Context;
 #[doc(inline)]
-pub use middleware::Middleware;
+pub use middleware::{Middleware, MiddlewareStack};
 #[doc(inline)]
 pub use response::{Response, Failure, AsyncResult};
 #[doc(inline)]
