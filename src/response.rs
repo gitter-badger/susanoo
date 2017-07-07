@@ -6,7 +6,7 @@ use context::Context;
 pub use hyper::server::Response;
 
 /// asynchronous result type
-pub type AsyncResult = BoxFuture<Success, Failure>;
+pub type AsyncResult<T = Success> = BoxFuture<T, Failure>;
 
 /// success type
 pub enum Success {
@@ -41,6 +41,7 @@ impl<E: StdError + 'static + Send> From<E> for Failure {
         }
     }
 }
+
 
 impl Failure {
     pub fn with_response(mut self, response: Response) -> Self {

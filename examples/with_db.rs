@@ -15,20 +15,23 @@ use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::Connection as SqliteConnection;
 
 
-struct DB(Pool<SqliteConnectionManager>);
+// DB connection pool.
+struct DBPool(Pool<SqliteConnectionManager>);
 
-impl Deref for DB {
+impl Deref for DBPool {
     type Target = Pool<SqliteConnectionManager>;
     fn deref(&self) -> &Pool<SqliteConnectionManager> {
         &self.0
     }
 }
 
-impl typemap::Key for DB {
-    type Value = DB;
+impl typemap::Key for DBPool {
+    type Value = Self;
 }
 
 
+
+// Model
 #[derive(Debug)]
 struct Person {
     id: i32,
@@ -36,22 +39,60 @@ struct Person {
     data: Option<Vec<u8>>,
 }
 
+impl Person {
+    fn new(id: i32, name: &str) -> Self {
+        Person {
+            id,
+            name: name.to_owned(),
+            data: None,
+        }
+    }
 
-fn index(ctx: Context) -> AsyncResult {
-    let db = ctx.states.get::<DB>().unwrap();
-    let conn = try_f!(db.get());
-    let mut stmt = try_f!(conn.prepare("SELECT id,name,data FROM persons"));
-    let persons: Vec<_> = try_f!(stmt.query_map(&[], |row| {
+    fn from_row(row: &rusqlite::Row) -> Self {
         Person {
             id: row.get(0),
             name: row.get(1),
             data: row.get(2),
         }
-    })).collect();
+    }
+
+    fn insert(&self, conn: &SqliteConnection) -> rusqlite::Result<i32> {
+        conn.execute(
+            "INSERT INTO persons (name, data) VALUES (?1, ?2)",
+            &[&self.name, &self.data],
+        )
+    }
+
+    fn create_table(conn: &SqliteConnection) -> rusqlite::Result<()> {
+        conn.execute(
+            r#"CREATE TABLE persons (
+                id    INTEGER   PRIMARY KEY
+              , name  TEXT      NOT NULL
+              , data  BLOB
+            )"#,
+            &[],
+        ).map(|_| ())
+    }
+
+    fn select(conn: &SqliteConnection) -> rusqlite::Result<Vec<Person>> {
+        let mut stmt = conn.prepare(
+            "SELECT id,name,data FROM persons",
+        )?;
+        let people = stmt.query_map(&[], Person::from_row)?
+            .collect::<Result<_, _>>()?;
+        Ok(people)
+    }
+}
+
+
+fn index(ctx: Context) -> AsyncResult {
+    let db = ctx.states.get::<DBPool>().unwrap();
+    let conn = try_f!(db.get());
+    let people = try_f!(Person::select(&*conn));
     future::ok(
         Response::new()
             .with_status(StatusCode::Ok)
-            .with_body(format!("persons: {:?}", persons))
+            .with_body(format!("people: {:?}", people))
             .into(),
     ).boxed()
 }
@@ -59,27 +100,12 @@ fn index(ctx: Context) -> AsyncResult {
 
 fn init_db(path: &str) {
     let _ = std::fs::remove_file(path);
-
     let conn = SqliteConnection::open(path).unwrap();
 
-    conn.execute(
-        r#"CREATE TABLE persons (
-                id    INTEGER   PRIMARY KEY
-              , name  TEXT      NOT NULL
-              , data  BLOB
-            )"#,
-        &[],
-    ).unwrap();
+    Person::create_table(&conn).unwrap();
 
-    let me = Person {
-        id: 0,
-        name: "Bob".to_owned(),
-        data: None,
-    };
-    conn.execute(
-        "INSERT INTO persons (name, data) VALUES (?1, ?2)",
-        &[&me.name, &me.data],
-    ).unwrap();
+    let me = Person::new(0, "Bob");
+    me.insert(&conn).unwrap();
 }
 
 
@@ -89,7 +115,7 @@ fn main() {
     // create DB connection pool
     let manager = SqliteConnectionManager::new("app.sqlite");
     let pool = r2d2::Pool::new(Default::default(), manager).unwrap();
-    let db = DB(pool);
+    let db = DBPool(pool);
 
     let server = Server::new()
         .with_route(Get, "/", index)
