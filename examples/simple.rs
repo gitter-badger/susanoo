@@ -9,7 +9,8 @@ fn index(_ctx: Context) -> AsyncResult {
     future::ok(
         Response::new()
             .with_status(StatusCode::Ok)
-            .with_body("Hello, world"),
+            .with_body("Hello, world")
+            .into(),
     ).boxed()
 }
 
@@ -25,7 +26,8 @@ fn index_post(ctx: Context) -> AsyncResult {
             future::ok(
                 Response::new()
                     .with_status(StatusCode::Ok)
-                    .with_body(format!("Posted: {}", String::from_utf8_lossy(&body))),
+                    .with_body(format!("Posted: {}", String::from_utf8_lossy(&body)))
+                    .into(),
             )
         })
         .map_err(|err| Failure::new(err))
@@ -36,7 +38,8 @@ fn show_captures(ctx: Context) -> AsyncResult {
     future::ok(
         Response::new()
             .with_status(StatusCode::Ok)
-            .with_body(format!("Captures: {:?}", ctx.cap)),
+            .with_body(format!("Captures: {:?}", ctx.cap))
+            .into(),
     ).boxed()
 }
 

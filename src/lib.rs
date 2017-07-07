@@ -9,7 +9,6 @@ pub extern crate typemap;
 extern crate unsafe_any;
 
 pub mod context;
-pub mod controller;
 pub mod middleware;
 pub mod response;
 pub mod router;
@@ -23,8 +22,6 @@ pub mod contrib {
 
 #[doc(inline)]
 pub use context::Context;
-#[doc(inline)]
-pub use controller::Controller;
 #[doc(inline)]
 pub use middleware::Middleware;
 #[doc(inline)]

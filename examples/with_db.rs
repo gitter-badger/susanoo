@@ -50,7 +50,8 @@ fn index(ctx: Context) -> AsyncResult {
     future::ok(
         Response::new()
             .with_status(StatusCode::Ok)
-            .with_body(format!("persons: {:?}", persons)),
+            .with_body(format!("persons: {:?}", persons))
+            .into(),
     ).boxed()
 }
 

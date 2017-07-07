@@ -11,9 +11,9 @@ use typemap::{TypeMap, Key};
 use unsafe_any::UnsafeAny;
 
 use context::Context;
-use controller::Controller;
 use middleware::Middleware;
 use router::Router;
+use response::Success;
 
 
 pub type States = TypeMap<UnsafeAny + 'static + Send + Sync>;
@@ -43,15 +43,15 @@ impl Server {
         }
     }
 
-    pub fn with_route<S, H>(mut self, method: Method, pattern: S, handler: H) -> Self
+    pub fn with_route<S, M>(mut self, method: Method, pattern: S, middleware: M) -> Self
     where
         S: AsRef<str>,
-        H: Controller,
+        M: Middleware,
     {
         Arc::get_mut(&mut self.inner)
             .unwrap()
             .router
-            .add_route(method, pattern, handler);
+            .add_route(method, pattern, middleware);
         self
     }
 
@@ -111,25 +111,29 @@ impl Service for RootService {
             &method,
             &path,
         ) {
-            Ok((controller, cap)) => {
-                let ctx = future::ok(Context::new(req, cap, self.inner.states.clone())).boxed();
+            Ok((middleware, cap)) => {
+                let ctx = future::ok(Context::new(req, cap, self.inner.states.clone()).into())
+                    .boxed();
 
                 // apply middlewares
-                let ctx = self.inner.middlewares.iter().fold(
-                    ctx,
-                    |ctx, middleware| {
+                let ctx = self.inner
+                    .middlewares
+                    .iter()
+                    .chain(vec![middleware].iter())
+                    .fold(ctx, |ctx, middleware| {
                         let middleware = middleware.clone();
-                        ctx.and_then(move |ctx| middleware.call(ctx))
-                            .boxed()
-                    },
-                );
-
-                // apply controller
-                let ctx = ctx.and_then(move |ctx| controller.call(ctx));
+                        ctx.and_then(move |ctx| match ctx {
+                            Success::Continue(ctx) => middleware.call(ctx),
+                            Success::Finished(res) => future::ok(res.into()).boxed(),
+                        }).boxed()
+                    });
 
                 // convert to Hyper response
                 ctx.then(|resp| match resp {
-                    Ok(resp) => Ok(resp),
+                    Ok(Success::Finished(resp)) => Ok(resp),
+                    Ok(Success::Continue(_ctx)) => Ok(Response::new().with_status(
+                        StatusCode::NotFound,
+                    )),
                     Err(failure) => Ok(
                         failure.response.unwrap_or(
                             Response::new()

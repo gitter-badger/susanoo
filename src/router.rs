@@ -5,11 +5,11 @@ use hyper::{Method, StatusCode};
 use regex::Regex;
 
 use context::Captures;
-use controller::Controller;
+use middleware::Middleware;
 
 struct Route {
     pattern: Regex,
-    handler: Arc<Controller>,
+    middleware: Arc<Middleware>,
 }
 
 
@@ -19,18 +19,20 @@ pub struct Router {
 }
 
 impl Router {
-    pub fn add_route<S, H>(&mut self, method: Method, pattern: S, handler: H) -> &mut Self
+    pub fn add_route<S, M>(&mut self, method: Method, pattern: S, middleware: M) -> &mut Self
     where
         S: AsRef<str>,
-        H: Controller,
+        M: Middleware,
     {
         let pattern = normalize_pattern(pattern.as_ref());
         let pattern = Regex::new(&pattern).unwrap();
-        let handler = Arc::new(handler);
         self.routes
             .entry(method)
             .or_insert(Vec::new())
-            .push(Route { pattern, handler });
+            .push(Route {
+                pattern,
+                middleware: Arc::new(middleware),
+            });
         self
     }
 
@@ -38,13 +40,13 @@ impl Router {
         &self,
         method: &Method,
         path: &str,
-    ) -> Result<(Arc<Controller>, Captures), StatusCode> {
+    ) -> Result<(Arc<Middleware>, Captures), StatusCode> {
         let routes = self.routes.get(method).ok_or(
             StatusCode::NotFound,
         )?;
         for route in routes {
             if let Some(caps) = get_owned_captures(&route.pattern, path) {
-                return Ok((route.handler.clone(), caps));
+                return Ok((route.middleware.clone(), caps));
             }
         }
         Err(StatusCode::NotFound)
