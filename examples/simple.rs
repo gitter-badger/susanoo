@@ -1,6 +1,6 @@
 extern crate susanoo;
 
-use susanoo::{Context, Server, Response, Failure, AsyncResult};
+use susanoo::{Context, Server, Response, AsyncResult};
 use susanoo::contrib::hyper::{Get, Post, StatusCode};
 use susanoo::contrib::futures::{future, Future, Stream};
 
@@ -30,7 +30,7 @@ fn index_post(ctx: Context) -> AsyncResult {
                     .into(),
             )
         })
-        .map_err(|err| Failure::new(err))
+        .map_err(Into::into)
         .boxed()
 }
 

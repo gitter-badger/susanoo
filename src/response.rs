@@ -33,16 +33,27 @@ pub struct Failure {
     pub response: Option<Response>,
 }
 
-impl Failure {
-    pub fn new<E: 'static + StdError + Send>(err: E) -> Failure {
+impl<E: StdError + 'static + Send> From<E> for Failure {
+    fn from(err: E) -> Self {
         Failure {
             err: Box::new(err),
             response: None,
         }
     }
+}
 
+impl Failure {
     pub fn with_response(mut self, response: Response) -> Self {
         self.response = Some(response);
         self
     }
+}
+
+
+#[macro_export]
+macro_rules! try_f {
+    ($e:expr) => (match $e {
+        Ok(val) => val,
+        Err(err) => return future::err(err.into()).boxed(),
+    });
 }
