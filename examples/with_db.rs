@@ -1,6 +1,5 @@
 #[macro_use(try_f)]
 extern crate susanoo;
-extern crate typemap;
 extern crate r2d2;
 extern crate r2d2_sqlite;
 extern crate rusqlite;
@@ -8,6 +7,7 @@ extern crate rusqlite;
 use susanoo::{Context, Server, Response, AsyncResult};
 use susanoo::contrib::hyper::{Get, StatusCode};
 use susanoo::contrib::futures::{future, Future};
+use susanoo::contrib::typemap::Key;
 
 use std::ops::Deref;
 use r2d2::Pool;
@@ -25,7 +25,7 @@ impl Deref for DBPool {
     }
 }
 
-impl typemap::Key for DBPool {
+impl Key for DBPool {
     type Value = Self;
 }
 
