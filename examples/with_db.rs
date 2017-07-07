@@ -75,9 +75,7 @@ impl Person {
     }
 
     fn select(conn: &SqliteConnection) -> rusqlite::Result<Vec<Person>> {
-        let mut stmt = conn.prepare(
-            "SELECT id,name,data FROM persons",
-        )?;
+        let mut stmt = conn.prepare("SELECT id,name,data FROM persons")?;
         let people = stmt.query_map(&[], Person::from_row)?
             .collect::<Result<_, _>>()?;
         Ok(people)

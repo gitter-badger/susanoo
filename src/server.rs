@@ -107,10 +107,7 @@ impl Service for RootService {
         // apply router
         let method = req.method().clone();
         let path = req.path().to_owned();
-        match self.inner.router.recognize(
-            &method,
-            &path,
-        ) {
+        match self.inner.router.recognize(&method, &path) {
             Ok((middleware, cap)) => {
                 let ctx = future::ok(Context::new(req, cap, self.inner.states.clone()).into())
                     .boxed();
